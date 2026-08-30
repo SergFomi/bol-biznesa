@@ -88,24 +88,33 @@ export function DissolveStage() {
     const aImg = actx.createImageData(NOISE, NOISE);
     const md = mImg.data;
     const ad = aImg.data;
-    const w = 0.08;
+    const w = 0.07;
     const rest = p <= 0.012 || p >= 0.988;
+    const radius = p * 1.18;
+    const inv = 1 / (NOISE - 1);
+    const corner = Math.SQRT2 / 2;
 
-    for (let i = 0; i < NOISE_DATA.length; i++) {
-      const n = NOISE_DATA[i];
-      const o = i * 4;
-      const t = (n - (p - w)) / (w * 2);
-      const keep = rest ? (p < 0.5 ? 1 : 0) : clamp01(t);
-      const a = Math.round(keep * 255);
-      md[o] = 255;
-      md[o + 1] = 255;
-      md[o + 2] = 255;
-      md[o + 3] = a;
-      const edge = rest ? 0 : Math.max(0, 1 - Math.abs(n - p) / w);
-      ad[o] = 212;
-      ad[o + 1] = 255;
-      ad[o + 2] = 63;
-      ad[o + 3] = Math.round(Math.pow(edge, 1.35) * 230);
+    for (let y = 0; y < NOISE; y++) {
+      const ny = y * inv - 0.5;
+      for (let x = 0; x < NOISE; x++) {
+        const i = y * NOISE + x;
+        const n = NOISE_DATA[i];
+        const o = i * 4;
+        const nx = x * inv - 0.5;
+        const dist = Math.sqrt(nx * nx + ny * ny) / corner;
+        const field = dist + (n - 0.5) * 0.16 - radius;
+        const keep = rest ? (p < 0.5 ? 1 : 0) : clamp01(field / w + 0.5);
+        const a = Math.round(keep * 255);
+        md[o] = 255;
+        md[o + 1] = 255;
+        md[o + 2] = 255;
+        md[o + 3] = a;
+        const edge = rest ? 0 : Math.max(0, 1 - Math.abs(field) / w);
+        ad[o] = 212;
+        ad[o + 1] = 255;
+        ad[o + 2] = 63;
+        ad[o + 3] = Math.round(Math.pow(edge, 1.25) * 240);
+      }
     }
     mctx.putImageData(mImg, 0, 0);
     actx.putImageData(aImg, 0, 0);
